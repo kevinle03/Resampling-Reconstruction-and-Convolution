@@ -1,0 +1,146 @@
+% Part 1
+clear;
+%Problem 1A)
+
+n=0:1:9;
+n_a=0:1:18;
+n_b=0:1:27;
+n_c=0:1:36;
+n_d=0:1:45;
+unitstep_0=n>=0;
+unitstep_10=n>=10;
+sequence=unitstep_0-unitstep_10;
+
+figure(1);
+hold on;
+stem(n,sequence);
+xlabel("Sample Number ([n])");
+ylabel("Signal Amplitude ([A])");
+title("Signal Amplitude over Sample Number (Sequence)");
+grid on;
+hold off;
+
+%Problem 1B)
+a=conv(sequence,sequence);
+b=conv(a,sequence);
+c=conv(b,sequence);
+d=conv(c,sequence);
+
+%Problem 1C)
+figure(2);
+hold on;
+stem(n_a,a);
+xlabel("Sample Number ([n])");
+ylabel("Signal Amplitude ([A])");
+title("Signal Amplitude over Sample Number (Convolution A)");
+grid on;
+hold off;
+figure(3);
+hold on;
+stem(n_b,b);
+xlabel("Sample Number ([n])");
+ylabel("Signal Amplitude ([A])");
+title("Signal Amplitude over Sample Number (Convolution B)");
+grid on;
+hold off;
+figure(4);
+hold on;
+stem(n_c,c);
+xlabel("Sample Number ([n])");
+ylabel("Signal Amplitude ([A])");
+title("Signal Amplitude over Sample Number (Convolution C)");
+grid on;
+hold off;
+figure(5);
+hold on;
+stem(n_d,d);
+xlabel("Sample Number ([n])");
+ylabel("Signal Amplitude ([A])");
+title("Signal Amplitude over Sample Number (Convolution D)");
+grid on;
+hold off;
+
+% Part 2
+clear;
+%Problem 2A)
+
+[impr, fs]=audioread('roomIR.wav');
+
+
+%Problem 2B)
+
+figure(1);
+hold on;
+plot(impr);
+xlabel("Time (s)");
+ylabel("Impulse Noise Waveform ([A])");
+title("Impulse Noise Waveform over Time");
+grid on;
+hold off;
+
+%soundsc(impr,fs);
+
+%Problem 2C)
+[y,fs1] = audioread('convolution.wav');
+%soundsc(y,fs1)
+
+%Problem 2D)
+
+convolved_signal=conv(impr,y);
+soundsc(y,fs1)
+
+% Part 3
+%% (a)
+killarney_pic = imread("KillarneyPic.png");
+whos("killarney_pic")
+%% (b)
+killarney_pic_double = im2double(killarney_pic);
+figure
+imshow(killarney_pic_double)
+%% (c)
+rate_reduction_factor = 5;
+% impulse sampling
+impulse_sample = zeros(size(killarney_pic_double));
+impulse_sample(1:rate_reduction_factor:end, 1:rate_reduction_factor:end) = 1;
+killarney_pic_impulse_sampled = impulse_sample.*killarney_pic_double;
+figure
+imshow(killarney_pic_impulse_sampled)
+% downsampling
+killarney_pic_downsampled = killarney_pic_double(1:rate_reduction_factor:end, 1:rate_reduction_factor:end);
+figure
+imshow(killarney_pic_downsampled)
+% zero-order hold reconstruction
+killarney_pic_ZOH = zeros(size(killarney_pic_double));
+for i=1:size(killarney_pic_downsampled,1) % access rows
+    for j=1:size(killarney_pic_downsampled,2) % access columns
+        killarney_pic_ZOH(i*rate_reduction_factor-(rate_reduction_factor-1):i*rate_reduction_factor,j*rate_reduction_factor-(rate_reduction_factor-1):j*rate_reduction_factor) = killarney_pic_downsampled(i,j);
+    end
+end
+figure
+imshow(killarney_pic_ZOH)
+% first_order hold reconstruction
+killarney_pic_FOH = zeros(size(killarney_pic_double));
+% interpolate every rate_reduction_factor number of rows first
+for i=1:size(killarney_pic_downsampled,1) % access rows
+    for j=1:size(killarney_pic_downsampled,2) % access columns
+        if j == size(killarney_pic_downsampled, 2)
+            row_interpolation = killarney_pic_downsampled(i,j)*ones(1,5); % keep constant for last column
+        else
+            row_interpolation = linspace(killarney_pic_downsampled(i,j),killarney_pic_downsampled(i,j+1),6);
+        end
+        killarney_pic_FOH(i*rate_reduction_factor-(rate_reduction_factor-1),j*rate_reduction_factor-(rate_reduction_factor-1):j*rate_reduction_factor) = row_interpolation(1,1:5);
+    end
+end
+% interpolate all columns
+for j=1:size(killarney_pic_FOH,2) % access all columnso
+    for i=1:size(killarney_pic_downsampled,1) % access rows
+        if i == size(killarney_pic_downsampled,1)
+            column_interpolation = killarney_pic_FOH(i*rate_reduction_factor-(rate_reduction_factor-1),j)*ones(1,5); % keep constant for last row
+        else
+            column_interpolation = linspace(killarney_pic_FOH(i*rate_reduction_factor-(rate_reduction_factor-1),j),killarney_pic_FOH(i*rate_reduction_factor+1,j),6);
+        end
+        killarney_pic_FOH(i*rate_reduction_factor-(rate_reduction_factor-1):i*rate_reduction_factor,j) = column_interpolation(1,1:5).';
+    end
+end
+figure
+imshow(killarney_pic_FOH)
